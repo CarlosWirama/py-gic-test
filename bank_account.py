@@ -1,4 +1,5 @@
 import datetime
+import re
 
 class Transaction:
     def __init__(self, date, account, txn_type, amount, txn_id):
@@ -15,6 +16,12 @@ class Account:
         self.balance = 0.0
 
     def add_transaction(self, date, txn_type, amount):
+        if not re.match(r'\d{8}', date):
+            raise ValueError("Invalid date format. Use YYYYMMDD.")
+        if txn_type.upper() not in ['D', 'W']:
+            raise ValueError("Invalid transaction type. Use 'D' for deposit or 'W' for withdrawal.")
+        if amount <= 0 or round(amount, 2) != amount:
+            raise ValueError("Invalid amount. Must be greater than zero with up to two decimal places.")
         if txn_type.upper() == "W" and (self.balance - amount < 0):
             raise ValueError("Insufficient balance")
         
@@ -32,11 +39,17 @@ class Account:
         return f"{date}-{count + 1:02d}"
 
     def get_statement(self, year_month):
+        if not re.match(r'\d{6}', year_month):
+            raise ValueError("Invalid year-month format. Use YYYYMM.")
         statement = [txn for txn in self.transactions if txn.date.startswith(year_month)]
         return statement
 
 class InterestRule:
     def __init__(self, date, rule_id, rate):
+        if not re.match(r'\d{8}', date):
+            raise ValueError("Invalid date format. Use YYYYMMDD.")
+        if rate <= 0 or rate >= 100:
+            raise ValueError("Invalid interest rate. Must be between 0 and 100.")
         self.date = date
         self.rule_id = rule_id
         self.rate = rate
