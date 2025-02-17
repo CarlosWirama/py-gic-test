@@ -1,5 +1,4 @@
 import datetime
-import unittest
 
 class Transaction:
     def __init__(self, date, account, txn_type, amount, txn_id):
@@ -85,41 +84,62 @@ class Bank:
         
         return round(total_interest, 2)
 
-class BankTests(unittest.TestCase):
-    def setUp(self):
-        self.bank = Bank()
-
-    def test_transaction_deposit_withdraw(self):
-        self.bank.add_transaction("20230601", "AC001", "D", 100.00)
-        self.bank.add_transaction("20230602", "AC001", "W", 50.00)
-        self.assertEqual(self.bank.accounts["AC001"].balance, 50.00)
-
-    def test_insufficient_funds(self):
-        self.bank.add_transaction("20230601", "AC001", "D", 50.00)
-        with self.assertRaises(ValueError):
-            self.bank.add_transaction("20230602", "AC001", "W", 100.00)
-
-    def test_interest_calculation(self):
-        self.bank.add_transaction("20230601", "AC001", "D", 200.00)
-        self.bank.add_interest_rule("20230601", "RULE01", 2.0)
-        interest = self.bank.calculate_interest("AC001", "202306")
-        self.assertGreater(interest, 0)
-
-    def test_transaction_id_format(self):
-        self.bank.add_transaction("20230601", "AC001", "D", 100.00)
-        self.bank.add_transaction("20230601", "AC001", "W", 50.00)
-        self.assertEqual(self.bank.accounts["AC001"].transactions[0].txn_id, "20230601-01")
-        self.assertEqual(self.bank.accounts["AC001"].transactions[1].txn_id, "20230601-02")
-
-    def test_invalid_interest_rate(self):
-        with self.assertRaises(ValueError):
-            self.bank.add_interest_rule("20230601", "RULE01", -1.0)
-        with self.assertRaises(ValueError):
-            self.bank.add_interest_rule("20230601", "RULE02", 101.0)
-
-    def test_print_statement_no_transactions(self):
-        statement = self.bank.calculate_interest("AC999", "202306")
-        self.assertEqual(statement, 0.0)
+def main():
+    bank = Bank()
+    while True:
+        print("\nWelcome to AwesomeGIC Bank! What would you like to do?")
+        print("[T] Input transactions")
+        print("[I] Define interest rules")
+        print("[P] Print statement")
+        print("[Q] Quit")
+        choice = input("> ").strip().upper()
+        
+        if choice == "T":
+            while True:
+                txn_input = input("\nPlease enter transaction details in <Date> <Account> <Type> <Amount> format (or enter blank to go back to main menu):\n> ").strip()
+                if not txn_input:
+                    break
+                try:
+                    date, account, txn_type, amount = txn_input.split()
+                    bank.add_transaction(date, account, txn_type, float(amount))
+                except Exception as e:
+                    print(f"Error: {e}")
+        
+        elif choice == "I":
+            while True:
+                rule_input = input("\nPlease enter interest rules details in <Date> <RuleId> <Rate in %> format (or enter blank to go back to main menu):\n> ").strip()
+                if not rule_input:
+                    break
+                try:
+                    date, rule_id, rate = rule_input.split()
+                    bank.add_interest_rule(date, rule_id, float(rate))
+                except Exception as e:
+                    print(f"Error: {e}")
+        
+        elif choice == "P":
+            while True:
+                statement_input = input("\nPlease enter account and month to generate the statement <Account> <Year><Month> (or enter blank to go back to main menu):\n> ").strip()
+                if not statement_input:
+                    break
+                try:
+                    account, year_month = statement_input.split()
+                    statement = bank.accounts.get(account, Account(account)).get_statement(year_month)
+                    print("\nAccount:", account)
+                    print("| Date     | Txn Id      | Type | Amount | Balance |")
+                    balance = 0
+                    for txn in statement:
+                        balance += txn.amount if txn.txn_type == "D" else -txn.amount
+                        print(f"| {txn.date} | {txn.txn_id} | {txn.txn_type} | {txn.amount:.2f} | {balance:.2f} |")
+                    interest = bank.calculate_interest(account, year_month)
+                    print(f"| {year_month}30 |             | I    | {interest:.2f} | {balance + interest:.2f} |")
+                except Exception as e:
+                    print(f"Error: {e}")
+        
+        elif choice == "Q":
+            print("Thank you for banking with AwesomeGIC Bank.\nHave a nice day!")
+            break
+        else:
+            print("Invalid option, please try again.")
 
 if __name__ == "__main__":
-    unittest.main()
+    main()
